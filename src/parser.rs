@@ -1,45 +1,72 @@
-use crate::bus::Bus;
+pub enum ParseResult {
+    Read { address: (u64, u64) },
+    Write { address: u64, bytes: Vec<u8> },
+    ParseError(ParseError),
+}
 
-pub fn parse<B: Bus>(
-    input: &str,
-    bus: &mut B,
-    ptr: *mut u8,
-) -> Result<(), Box<dyn std::error::Error>> {
-    if input.trim().len() > 16 {
-        println!("INVALID INPUT: Please enter a hexadecimal value within size limits; 1-16 chars");
-        return Ok(());
+pub enum ParseError {
+    EmptyInput,
+    NoSplit,
+    NotHex,
+    NoSpace,
+}
+
+fn is_hex(line: &str) -> bool {
+    line.chars()
+        .filter(|c| !c.is_whitespace())
+        .all(|c| c.is_ascii_hexdigit())
+}
+
+pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
+    let line = input.trim();
+
+    if line.is_empty() {
+        return Ok(ParseResult::ParseError(ParseError::EmptyInput));
     }
-    if !input.trim().contains(char::is_whitespace)
-        && !input.trim().contains(".")
-        && !input.trim().contains(":")
-    {
-        let Some(val) = bus.read(ptr, u64::from_str_radix(input.trim(), 16)?) else {
-            return Ok(());
-        };
-        println!(
-            "\n{:016X}: {:02X}",
-            u64::from_str_radix(input.trim(), 16).unwrap(),
-            val
-        );
-        return Ok(());
-    } else if input.trim().contains(":") {
-        let Some((str_address, str_bytes)) = input.trim().split_once(":") else {
-            return Ok(());
+    if line.matches(":").count() == 1 {
+        let Some((str_address, str_bytes)) = line.split_once(":") else {
+            return Ok(ParseResult::ParseError(ParseError::NoSplit));
         };
 
-        let adrress = u64::from_str_radix(str_address.trim(), 16)?;
-
-        let bytes = str_bytes
-            .split_whitespace()
-            .map(|s| u8::from_str_radix(s, 16))
-            .collect::<Result<Vec<u8>, _>>()?;
-
-        for (i, byte) in bytes.iter().enumerate() {
-            bus.write(ptr, adrress + i as u64, *byte);
+        if !is_hex(str_address) && !is_hex(str_bytes) {
+            return Ok(ParseResult::ParseError(ParseError::NotHex));
         }
 
-        println!("\n{:016X}:{}", adrress, str_bytes);
-        return Ok(());
+        let address = u64::from_str_radix(str_address.trim(), 16)?;
+
+        let mut bytes: Vec<u8> = Vec::new();
+
+        for byte in str_bytes.split_whitespace() {
+            if byte.len() > 2 {
+                return Ok(ParseResult::ParseError(ParseError::NoSpace));
+            }
+            bytes.push(u8::from_str_radix(byte, 16)?);
+        }
+
+        Ok(ParseResult::Write { address, bytes })
+    } else if line.matches(".").count() == 1 {
+        let Some((str_address_1, str_address_2)) = line.split_once(".") else {
+            return Ok(ParseResult::ParseError(ParseError::NoSplit));
+        };
+
+        if !is_hex(str_address_1) && !is_hex(str_address_2) {
+            return Ok(ParseResult::ParseError(ParseError::NotHex));
+        }
+
+        let start_address = u64::from_str_radix(str_address_1, 16)?;
+        let end_address = u64::from_str_radix(str_address_2, 16)?;
+
+        Ok(ParseResult::Read {
+            address: (start_address, end_address),
+        })
+    } else {
+        if !is_hex(line) {
+            return Ok(ParseResult::ParseError(ParseError::NotHex));
+        }
+
+        let address = u64::from_str_radix(line, 16)?;
+        Ok(ParseResult::Read {
+            address: (address, address),
+        })
     }
-    Ok(())
 }
