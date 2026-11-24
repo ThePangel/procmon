@@ -33,6 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             ParseResult::Read { address } => mem_handler::read(&mut bus, ptr, address, mem_width),
 
+            ParseResult::Run { address } => mem_handler::run(&mut bus, ptr, address),
+
             ParseResult::ParseError(error) => match error {
                 ParseError::EmptyInput => {}
 

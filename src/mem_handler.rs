@@ -36,3 +36,7 @@ pub fn read<B: Bus>(bus: &mut B, ptr: *mut u8, address: (u64, u64), mem_width: u
     }
     println!()
 }
+
+pub fn run<B: Bus>(bus: &mut B, ptr: *mut u8, address: u64) {
+    bus.run(ptr, address);
+}

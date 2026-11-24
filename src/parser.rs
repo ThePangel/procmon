@@ -1,6 +1,7 @@
 pub enum ParseResult {
     Read { address: (u64, u64) },
     Write { address: u64, bytes: Vec<u8> },
+    Run { address: u64 },
     ParseError(ParseError),
 }
 
@@ -27,8 +28,8 @@ pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
         let Some((str_address, str_bytes)) = line.split_once(":") else {
             return Ok(ParseResult::ParseError(ParseError::NoSplit));
         };
-
-        if !is_hex(str_address) && !is_hex(str_bytes) {
+        println!("{}", str_address);
+        if !is_hex(str_address) || !is_hex(str_bytes) {
             return Ok(ParseResult::ParseError(ParseError::NotHex));
         }
 
@@ -49,7 +50,7 @@ pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
             return Ok(ParseResult::ParseError(ParseError::NoSplit));
         };
 
-        if !is_hex(str_address_1) && !is_hex(str_address_2) {
+        if !is_hex(str_address_1) || !is_hex(str_address_2) {
             return Ok(ParseResult::ParseError(ParseError::NotHex));
         }
 
@@ -58,6 +59,18 @@ pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
 
         Ok(ParseResult::Read {
             address: (start_address, end_address),
+        })
+    } else if line.matches("R").count() == 1 {
+        let Some(address) = line.strip_suffix("R") else {
+            return Ok(ParseResult::ParseError(ParseError::NoSplit));
+        };
+
+        if !is_hex(address) {
+            return Ok(ParseResult::ParseError(ParseError::NotHex));
+        }
+
+        Ok(ParseResult::Run {
+            address: u64::from_str_radix(address, 16)?,
         })
     } else {
         if !is_hex(line) {

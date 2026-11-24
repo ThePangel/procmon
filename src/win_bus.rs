@@ -52,4 +52,16 @@ impl Bus for WinBus {
             .expect("VirtualFree failed");
         }
     }
+    fn run(&mut self, memory_ptr: *mut u8, addr: u64) {
+        if addr >= self.mem_size as u64 {
+            println!("INVALID ADDRESS: Address is out of bounds");
+            return;
+        }
+
+        let code: extern "C" fn() -> i32 =
+            unsafe { std::mem::transmute(memory_ptr.wrapping_add(addr as usize)) };
+        let result = code();
+
+        println!("Code executed with result: {}", result);
+    }
 }
