@@ -6,7 +6,9 @@ use crate::bus::Bus;
 use std::io;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "windows")]
-    let mut bus = win_bus::WinBus;
+    let mut bus = win_bus::WinBus {
+        mem_size: 64 * 1024,
+    };
 
     let ptr = bus.alloc();
     if ptr.is_null() {
@@ -21,14 +23,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         io::stdin().read_line(&mut buffer)?;
         if buffer.trim() == "exit" {
             break;
-        } else if !buffer.trim().chars().all(|c| c.is_ascii_hexdigit()) {
-            println!("INVALID INPUT: Please enter a valid hexadecimal value");
-            buffer.clear();
-
-            continue;
         }
-        parser::parse(&buffer, &mut bus, ptr);
-        //bus.write(ptr, u64::from_str_radix(buffer.trim(), 16).unwrap(), 0x67);
+        parser::parse(&buffer, &mut bus, ptr)?;
 
         buffer.clear();
     }

@@ -4,14 +4,26 @@ use windows::Win32::System::Memory::{
     MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, VirtualAlloc,
 };
 
-pub struct WinBus;
+pub struct WinBus {
+    pub mem_size: usize,
+}
 
 impl Bus for WinBus {
-    fn read(&self, memory_ptr: *mut u8, addr: u64) -> u8 {
-        unsafe { std::ptr::read_volatile(memory_ptr.add(addr as usize)) }
+    fn read(&self, memory_ptr: *mut u8, addr: u64) -> Option<u8> {
+        if addr >= self.mem_size as u64 {
+            println!("INVALID ADDRESS: Address is out of bounds");
+            return None;
+        }
+
+        Some(unsafe { std::ptr::read_volatile(memory_ptr.add(addr as usize)) })
     }
 
     fn write(&mut self, memory_ptr: *mut u8, addr: u64, byte: u8) {
+        if addr >= self.mem_size as u64 {
+            println!("INVALID ADDRESS: Address is out of bounds");
+            return;
+        }
+
         unsafe { std::ptr::write_volatile(memory_ptr.add(addr as usize), byte) }
     }
 
@@ -19,7 +31,7 @@ impl Bus for WinBus {
         unsafe {
             let ptr = VirtualAlloc(
                 None,
-                63 * 1024,
+                self.mem_size,
                 MEM_RESERVE | MEM_COMMIT,
                 PAGE_EXECUTE_READWRITE,
             );
