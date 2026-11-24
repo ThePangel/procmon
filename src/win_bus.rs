@@ -10,7 +10,7 @@ pub struct WinBus {
 
 impl Bus for WinBus {
     fn read(&self, memory_ptr: *mut u8, addr: u64) -> Option<u8> {
-        if addr >= self.mem_size as u64 {
+        if addr > self.mem_size as u64 {
             println!("INVALID ADDRESS: Address is out of bounds");
             return None;
         }
@@ -19,7 +19,7 @@ impl Bus for WinBus {
     }
 
     fn write(&mut self, memory_ptr: *mut u8, addr: u64, byte: u8) {
-        if addr >= self.mem_size as u64 {
+        if addr > self.mem_size as u64 {
             println!("INVALID ADDRESS: Address is out of bounds");
             return;
         }
@@ -53,7 +53,7 @@ impl Bus for WinBus {
         }
     }
     fn run(&mut self, memory_ptr: *mut u8, addr: u64) {
-        if addr >= self.mem_size as u64 {
+        if addr > self.mem_size as u64 {
             println!("INVALID ADDRESS: Address is out of bounds");
             return;
         }

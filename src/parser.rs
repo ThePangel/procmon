@@ -28,7 +28,6 @@ pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
         let Some((str_address, str_bytes)) = line.split_once(":") else {
             return Ok(ParseResult::ParseError(ParseError::NoSplit));
         };
-        println!("{}", str_address);
         if !is_hex(str_address) || !is_hex(str_bytes) {
             return Ok(ParseResult::ParseError(ParseError::NotHex));
         }

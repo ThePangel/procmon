@@ -4,13 +4,32 @@ mod parser;
 mod win_bus;
 use crate::bus::Bus;
 use crate::parser::{ParseError, ParseResult};
-
+use clap::Parser;
 use std::io;
+
+fn parse_hex(string: &str) -> Result<usize, Box<dyn std::error::Error + Send + Sync + 'static>> {
+    Ok(u64::from_str_radix(string.trim(), 16)? as usize)
+}
+
+fn hex_width(n: usize) -> usize {
+    if n == 0 { 1 } else { (n.ilog(16) + 1) as usize }
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, default_value_t = 0xFFFF, value_parser = parse_hex)]
+    mem_size: usize,
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mem_width: usize = 4;
+    let args = Args::parse();
+
+    let mem_width: usize = hex_width(args.mem_size);
 
     #[cfg(target_os = "windows")]
-    let mut bus = win_bus::WinBus { mem_size: 0xFFFF };
+    let mut bus = win_bus::WinBus {
+        mem_size: args.mem_size,
+    };
 
     let ptr = bus.alloc();
     if ptr.is_null() {
@@ -23,10 +42,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         io::stdin().read_line(&mut buffer)?;
-        if buffer.trim() == "exit" {
+        if buffer.trim().eq_ignore_ascii_case("EXIT") {
             break;
         }
-        match parser::parse(&buffer)? {
+        match parser::parse(&buffer.to_ascii_uppercase())? {
             ParseResult::Write { address, bytes } => {
                 mem_handler::write(&mut bus, ptr, address, bytes, mem_width)
             }
