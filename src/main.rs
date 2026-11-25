@@ -31,6 +31,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(pid) = args.pid {
         #[cfg(target_os = "windows")]
         let mut bus = win_bus::WinProcBus::attach(pid);
+
+        let mut buffer = String::new();
+        println!("\\");
+
+        loop {
+            io::stdin().read_line(&mut buffer)?;
+            if buffer.trim().eq_ignore_ascii_case("EXIT") {
+                break;
+            }
+            match parser::parse(&buffer.to_ascii_uppercase())? {
+                ParseResult::Write { address, bytes } => {
+                    mem_handler::proc_write(&mut bus, address, bytes)
+                }
+
+                ParseResult::Read { address } => mem_handler::proc_read(&mut bus, address),
+
+                ParseResult::Run { address } => println!("Can't run on another processes memory"),
+
+                ParseResult::ParseError(error) => match error {
+                    ParseError::EmptyInput => {}
+
+                    ParseError::NoSplit => println!("Couldn't split input string"),
+
+                    ParseError::NotHex => println!("Input is not pure hex / Invalid command"),
+
+                    ParseError::NoSpace => println!("Please add spaces between bytes when writing"),
+                },
+            }
+
+            buffer.clear();
+        }
     } else {
         let mem_width: usize = hex_width(args.mem_size);
 
