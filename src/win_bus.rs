@@ -77,7 +77,6 @@ impl Bus for WinBus {
 
 pub struct WinProcBus {
     h: HANDLE,
-    pub pid: u32,
 }
 
 impl WinProcBus {
@@ -93,7 +92,7 @@ impl WinProcBus {
             )
             .unwrap()
         };
-        WinProcBus { h, pid }
+        WinProcBus { h }
     }
 }
 
@@ -145,7 +144,6 @@ impl ProcBus for WinProcBus {
             let _ = FlushInstructionCache(self.h, Some(pointer), 1);
         }
     }
-    fn run(&mut self, addr: u64) {}
     fn drop(&mut self) {
         unsafe {
             let _ = CloseHandle(self.h);

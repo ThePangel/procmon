@@ -5,6 +5,7 @@ mod proc_bus;
 mod win_bus;
 use crate::bus::Bus;
 use crate::parser::{ParseError, ParseResult};
+use crate::proc_bus::ProcBus;
 use clap::Parser;
 use std::io;
 
@@ -47,7 +48,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 ParseResult::Read { address } => mem_handler::proc_read(&mut bus, address),
 
-                ParseResult::Run { address } => println!("Can't run on another processes memory"),
+                ParseResult::Run { address: _ } => {
+                    println!("Can't run on another processes memory")
+                }
 
                 ParseResult::Regions => mem_handler::proc_region(&mut bus),
 
@@ -64,6 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             buffer.clear();
         }
+        bus.drop();
     } else {
         let mem_width: usize = hex_width(args.mem_size);
 
