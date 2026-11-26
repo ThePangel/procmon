@@ -1,8 +1,8 @@
 use crate::{bus::Bus, proc_bus::ProcBus};
 
-pub fn write<B: Bus>(bus: &mut B, ptr: *mut u8, address: u64, bytes: Vec<u8>, mem_width: usize) {
+pub fn write<B: Bus>(bus: &mut B, address: u64, bytes: Vec<u8>, mem_width: usize) {
     for (i, byte) in bytes.iter().enumerate() {
-        bus.write(ptr, address + i as u64, *byte);
+        bus.write(address + i as u64, *byte);
     }
 
     println!(
@@ -49,10 +49,10 @@ pub fn proc_write<B: ProcBus>(bus: &mut B, address: u64, bytes: Vec<u8>) {
     );
 }
 
-pub fn read<B: Bus>(bus: &mut B, ptr: *mut u8, address: (u64, u64), mem_width: usize) {
+pub fn read<B: Bus>(bus: &mut B, address: (u64, u64), mem_width: usize) {
     let n_addresses = address.1.wrapping_sub(address.0) + 1;
     for i in 0..n_addresses {
-        let Some(val) = bus.read(ptr, address.0.wrapping_add(i)) else {
+        let Some(val) = bus.read(address.0.wrapping_add(i)) else {
             return;
         };
 
@@ -70,8 +70,8 @@ pub fn read<B: Bus>(bus: &mut B, ptr: *mut u8, address: (u64, u64), mem_width: u
     println!()
 }
 
-pub fn run<B: Bus>(bus: &mut B, ptr: *mut u8, address: u64) {
-    bus.run(ptr, address);
+pub fn run<B: Bus>(bus: &mut B, address: u64) {
+    bus.run(address);
 }
 
 pub fn proc_region<B: ProcBus>(bus: &mut B) {

@@ -78,16 +78,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mem_width: usize = hex_width(args.mem_size);
 
         #[cfg(target_os = "windows")]
-        let mut bus = win_bus::WinBus {
-            mem_size: args.mem_size,
-        };
+        let mut bus = win_bus::WinBus::alloc(args.mem_size);
 
         #[cfg(target_os = "linux")]
-        let mut bus = linux_bus::LinuxBus {
-            mem_size: args.mem_size,
-        };
+        let mut bus = linux_bus::LinuxBus::alloc(args.mem_size);
 
-        let ptr = bus.alloc();
+        let ptr = bus.memory_ptr;
         if ptr.is_null() {
             panic!("Failed to allocate memory");
         }
@@ -103,14 +99,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             match parser::parse(&buffer.to_ascii_uppercase())? {
                 ParseResult::Write { address, bytes } => {
-                    mem_handler::write(&mut bus, ptr, address, bytes, mem_width)
+                    mem_handler::write(&mut bus, address, bytes, mem_width)
                 }
 
-                ParseResult::Read { address } => {
-                    mem_handler::read(&mut bus, ptr, address, mem_width)
-                }
+                ParseResult::Read { address } => mem_handler::read(&mut bus, address, mem_width),
 
-                ParseResult::Run { address } => mem_handler::run(&mut bus, ptr, address),
+                ParseResult::Run { address } => mem_handler::run(&mut bus, address),
 
                 ParseResult::Regions => println!("Listing regions is for processes only"),
 
@@ -127,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             buffer.clear();
         }
-        bus.free(ptr);
+        bus.free();
     }
     Ok(())
 }
