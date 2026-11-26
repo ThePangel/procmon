@@ -30,9 +30,12 @@ impl WinBus {
             if ptr.is_null() {
                 panic!("Failed to allocate memory");
             }
-            ptr
+            ptr as *mut u8
         };
-        Self { mem_size, ptr }
+        Self {
+            mem_size,
+            memory_ptr,
+        }
     }
 }
 
