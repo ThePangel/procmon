@@ -1,7 +1,10 @@
 mod bus;
+#[cfg(target_os = "linux")]
+mod linux_bus;
 mod mem_handler;
 mod parser;
 mod proc_bus;
+#[cfg(target_os = "windows")]
 mod win_bus;
 use crate::bus::Bus;
 use crate::parser::{ParseError, ParseResult};
@@ -14,7 +17,7 @@ fn parse_hex(string: &str) -> Result<usize, Box<dyn std::error::Error + Send + S
 }
 
 fn hex_width(n: usize) -> usize {
-    if n == 0 { 1 } else { (n.ilog(16) + 1) as usize }
+    if n == 0 { 1 } else { (n.ilog(16)) as usize }
 }
 
 #[derive(Parser, Debug)]
@@ -32,6 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(pid) = args.pid {
         #[cfg(target_os = "windows")]
         let mut bus = win_bus::WinProcBus::attach(pid);
+
+        #[cfg(target_os = "linux")]
+        let mut bus = linux_bus::LinuxProcBus {};
 
         let mut buffer = String::new();
         println!("\\");
@@ -73,6 +79,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         #[cfg(target_os = "windows")]
         let mut bus = win_bus::WinBus {
+            mem_size: args.mem_size,
+        };
+
+        #[cfg(target_os = "linux")]
+        let mut bus = linux_bus::LinuxBus {
             mem_size: args.mem_size,
         };
 
