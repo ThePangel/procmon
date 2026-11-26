@@ -49,6 +49,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 ParseResult::Run { address } => println!("Can't run on another processes memory"),
 
+                ParseResult::Regions => mem_handler::proc_region(&mut bus),
+
                 ParseResult::ParseError(error) => match error {
                     ParseError::EmptyInput => {}
 
@@ -94,6 +96,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 ParseResult::Run { address } => mem_handler::run(&mut bus, ptr, address),
+
+                ParseResult::Regions => println!("Listing regions is for processes only"),
 
                 ParseResult::ParseError(error) => match error {
                     ParseError::EmptyInput => {}

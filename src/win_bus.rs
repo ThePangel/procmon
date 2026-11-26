@@ -6,16 +6,13 @@ use std::ffi::c_void;
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE},
     System::Diagnostics::Debug::{FlushInstructionCache, ReadProcessMemory, WriteProcessMemory},
-    System::Memory::{
-        MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_PROTECTION_FLAGS, VirtualAlloc,
-        VirtualProtectEx,
-    },
     System::Threading::{
         OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
         PROCESS_VM_WRITE,
     },
 };
 
+use windows::Win32::System::Memory::*;
 pub struct WinBus {
     pub mem_size: usize,
 }
@@ -23,7 +20,7 @@ pub struct WinBus {
 impl Bus for WinBus {
     fn read(&self, memory_ptr: *mut u8, addr: u64) -> Option<u8> {
         if addr > self.mem_size as u64 {
-            println!("INVALID ADDRESS: Address is out of bounds");
+            println!("INVALID ADDRESS: Address isregions of bounds");
             return None;
         }
 
@@ -32,7 +29,7 @@ impl Bus for WinBus {
 
     fn write(&mut self, memory_ptr: *mut u8, addr: u64, byte: u8) {
         if addr > self.mem_size as u64 {
-            println!("INVALID ADDRESS: Address is out of bounds");
+            println!("INVALID ADDRESS: Address isregions of bounds");
             return;
         }
 
@@ -66,7 +63,7 @@ impl Bus for WinBus {
     }
     fn run(&mut self, memory_ptr: *mut u8, addr: u64) {
         if addr > self.mem_size as u64 {
-            println!("INVALID ADDRESS: Address is out of bounds");
+            println!("INVALID ADDRESS: Address isregions of bounds");
             return;
         }
 
@@ -155,7 +152,68 @@ impl ProcBus for WinProcBus {
         }
     }
     fn regions(&self) -> Vec<Region> {
-        todo!();
-        Vec::new()
+        let mut regions = Vec::new();
+        let mut addr: usize = 0;
+
+        loop {
+            let mut mbi = MEMORY_BASIC_INFORMATION::default();
+            let query = unsafe {
+                VirtualQueryEx(
+                    self.h,
+                    Some(addr as *const c_void),
+                    &mut mbi,
+                    size_of::<MEMORY_BASIC_INFORMATION>(),
+                )
+            };
+            if query == 0 {
+                break;
+            }
+
+            let start = mbi.BaseAddress as usize;
+            let end = start + mbi.RegionSize;
+
+            if mbi.State == MEM_COMMIT {
+                let p_flag = mbi.Protect.0;
+                let guard = p_flag & 0x100 != 0;
+
+                let (read, write, exec) = if guard {
+                    (false, false, false)
+                } else {
+                    match p_flag & 0xFF {
+                        0x02 => (true, false, false),
+                        0x04 => (true, true, false),
+                        0x08 => (true, true, false),
+                        0x10 => (false, false, true),
+                        0x20 => (true, false, true),
+                        0x40 => (true, true, true),
+                        0x80 => (true, true, true),
+                        _ => (false, false, false),
+                    }
+                };
+
+                let name = if mbi.Type == MEM_IMAGE {
+                    "image"
+                } else if mbi.Type == MEM_MAPPED {
+                    "mapped"
+                } else {
+                    "private"
+                };
+
+                regions.push(Region {
+                    start: start as u64,
+                    end: end as u64,
+                    read,
+                    write,
+                    exec,
+                    name: name.to_string(),
+                });
+            }
+
+            if end <= addr {
+                break;
+            }
+            addr = end;
+        }
+        regions
     }
 }

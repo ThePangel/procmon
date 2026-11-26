@@ -3,6 +3,7 @@ pub enum ParseResult {
     Write { address: u64, bytes: Vec<u8> },
     Run { address: u64 },
     ParseError(ParseError),
+    Regions,
 }
 
 pub enum ParseError {
@@ -59,6 +60,8 @@ pub fn parse(input: &str) -> Result<ParseResult, Box<dyn std::error::Error>> {
         Ok(ParseResult::Read {
             address: (start_address, end_address),
         })
+    } else if line.eq_ignore_ascii_case("regions") {
+        Ok(ParseResult::Regions)
     } else if line.matches("R").count() == 1 {
         let Some(address) = line.strip_suffix("R") else {
             return Ok(ParseResult::ParseError(ParseError::NoSplit));

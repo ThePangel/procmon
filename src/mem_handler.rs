@@ -73,3 +73,20 @@ pub fn read<B: Bus>(bus: &mut B, ptr: *mut u8, address: (u64, u64), mem_width: u
 pub fn run<B: Bus>(bus: &mut B, ptr: *mut u8, address: u64) {
     bus.run(ptr, address);
 }
+
+pub fn proc_region<B: ProcBus>(bus: &mut B) {
+    let regions = bus.regions();
+    for region in regions {
+        if region.write || region.read || region.exec {
+            println!(
+                "{:016X}-{:016X} {}{}{} {}",
+                region.start,
+                region.end,
+                if region.read { "r" } else { "-" },
+                if region.write { "w" } else { "-" },
+                if region.exec { "x" } else { "-" },
+                region.name
+            );
+        }
+    }
+}
