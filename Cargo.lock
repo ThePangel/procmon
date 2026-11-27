@@ -132,7 +132,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "procmon"
+name = "procmon-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
