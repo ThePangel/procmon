@@ -1,3 +1,5 @@
+use std::io;
+
 use crate::{bus::Bus, proc_bus::ProcBus};
 
 pub fn write<B: Bus>(bus: &mut B, address: u64, bytes: Vec<u8>, mem_width: usize) {
@@ -26,7 +28,7 @@ pub fn proc_read<B: ProcBus>(bus: &mut B, address: (u64, u64)) {
         };
 
         if i % 16 == 0 {
-            print!("\n{:16X}: {:02X}", address.0.wrapping_add(i), val)
+            print!("\n{:016X}: {:02X}", address.0.wrapping_add(i), val)
         } else {
             print!(" {:02X}", val);
         }
@@ -74,8 +76,8 @@ pub fn run<B: Bus>(bus: &mut B, address: u64) {
     bus.run(address);
 }
 
-pub fn proc_region<B: ProcBus>(bus: &mut B) {
-    let regions = bus.regions();
+pub fn proc_region<B: ProcBus>(bus: &mut B) -> io::Result<()> {
+    let regions = bus.regions()?;
     for region in regions {
         if region.write || region.read || region.exec {
             println!(
@@ -89,4 +91,5 @@ pub fn proc_region<B: ProcBus>(bus: &mut B) {
             );
         }
     }
+    Ok(())
 }

@@ -1,3 +1,5 @@
+use std::io::Result;
+
 #[derive(Debug)]
 pub struct Region {
     pub start: u64,
@@ -9,7 +11,7 @@ pub struct Region {
 }
 
 pub trait ProcBus {
-    fn regions(&self) -> Vec<Region>;
+    fn regions(&self) -> Result<Vec<Region>>;
     fn read(&self, addr: u64) -> Option<u8>;
     fn write(&mut self, addr: u64, byte: u8);
     fn drop(&mut self);

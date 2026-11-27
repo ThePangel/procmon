@@ -1,4 +1,10 @@
-use std::{ffi::c_void, ptr};
+use std::{
+    ffi::c_void,
+    fs::{File, OpenOptions, read_to_string},
+    io::{self},
+    os::unix::fs::FileExt,
+    ptr,
+};
 
 use crate::{
     Bus,
@@ -47,7 +53,7 @@ impl Bus for LinuxBus {
     }
     fn write(&mut self, addr: u64, byte: u8) {
         if addr > self.mem_size as u64 {
-            println!("INVALID ADDRESS: Address isregions of bounds");
+            println!("INVALID ADDRESS: Address is out of bounds");
             return;
         }
 
@@ -73,19 +79,66 @@ impl Bus for LinuxBus {
     }
 }
 
-pub struct LinuxProcBus {}
+pub struct LinuxProcBus {
+    mem: File,
+    pid: u32,
+}
+
+impl LinuxProcBus {
+    pub fn attach(pid: u32) -> Self {
+        let mem = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(format!("/proc/{pid}/mem"))
+            .unwrap();
+
+        LinuxProcBus { mem, pid }
+    }
+}
 
 impl ProcBus for LinuxProcBus {
-    fn regions(&self) -> Vec<Region> {
-        todo!()
+    fn regions(&self) -> io::Result<Vec<Region>> {
+        let pid = self.pid;
+        let mut regions = Vec::new();
+        let lines = read_to_string(format!("/proc/{pid}/maps"))?;
+
+        for line in lines.lines() {
+            let mut parts = line.split_whitespace();
+            let Some((start_str, end_str)) = parts.next().unwrap_or("").split_once("-") else {
+                continue;
+            };
+            let Ok(start) = u64::from_str_radix(start_str, 16) else {
+                continue;
+            };
+            let Ok(end) = u64::from_str_radix(end_str, 16) else {
+                continue;
+            };
+
+            let permissions = parts.next().unwrap_or("");
+            let name = parts.nth(3).unwrap_or("").to_string();
+
+            regions.push(Region {
+                start,
+                end,
+                read: permissions.contains("r"),
+                write: permissions.contains("w"),
+                exec: permissions.contains("x"),
+                name,
+            });
+        }
+
+        Ok(regions)
     }
     fn read(&self, addr: u64) -> Option<u8> {
-        todo!()
+        let mut byte_buf = [0u8; 1];
+        self.mem.read_at(&mut byte_buf, addr).ok()?;
+        Some(byte_buf[0])
     }
     fn write(&mut self, addr: u64, byte: u8) {
-        todo!()
+        let byte_buf = [byte];
+        if !self.mem.write_at(&byte_buf, addr).is_ok() {
+            println!("Failed to write {:02X} at {:016X}", byte, addr);
+        }
     }
-    fn drop(&mut self) {
-        todo!()
-    }
+    fn drop(&mut self) {}
 }

@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut bus = win_bus::WinProcBus::attach(pid);
 
         #[cfg(target_os = "linux")]
-        let mut bus = linux_bus::LinuxProcBus {};
+        let mut bus = linux_bus::LinuxProcBus::attach(pid);
 
         let mut buffer = String::new();
         println!("\\");
@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Can't run on another processes memory")
                 }
 
-                ParseResult::Regions => mem_handler::proc_region(&mut bus),
+                ParseResult::Regions => mem_handler::proc_region(&mut bus)?,
 
                 ParseResult::ParseError(error) => match error {
                     ParseError::EmptyInput => {}
