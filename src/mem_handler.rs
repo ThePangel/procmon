@@ -1,6 +1,5 @@
-use std::io;
-
 use crate::{bus::Bus, proc_bus::ProcBus};
+use std::io;
 
 pub fn write<B: Bus>(bus: &mut B, address: u64, bytes: Vec<u8>, mem_width: usize) {
     for (i, byte) in bytes.iter().enumerate() {
@@ -53,23 +52,46 @@ pub fn proc_write<B: ProcBus>(bus: &mut B, address: u64, bytes: Vec<u8>) {
 
 pub fn read<B: Bus>(bus: &mut B, address: (u64, u64), mem_width: usize) {
     let n_addresses = address.1.wrapping_sub(address.0) + 1;
-    for i in 0..n_addresses {
-        let Some(val) = bus.read(address.0.wrapping_add(i)) else {
-            return;
-        };
+    let mut block = String::new();
+    for i in (0..n_addresses).step_by(16) {
+        let base_addrs = address.0.wrapping_add(i);
+        for j in 0..16 {
+            if !((address.0)..=address.1).contains(&base_addrs.wrapping_add(j)) {
+                println!("{block}");
+                break;
+            }
+            let Some(val) = bus.read(base_addrs.wrapping_add(j)) else {
+                return;
+            };
 
-        if i % 16 == 0 {
-            print!(
-                "\n{:0w$X}: {:02X}",
-                address.0.wrapping_add(i),
-                val,
-                w = mem_width
-            )
-        } else {
-            print!(" {:02X}", val);
+            if j % 16 == 0 {
+                block.push_str(&format!(
+                    "\n{:0w$X}: {:02X}",
+                    address.0.wrapping_add(i),
+                    val,
+                    w = mem_width
+                ));
+            } else {
+                block.push_str(&format!(" {:02X}", val));
+            }
+        }
+        for ascii in 0..16 {
+            if !(address.0..=address.1).contains(&base_addrs.wrapping_add(ascii)) {
+                println!("{block}");
+                return;
+            }
+            let Some(val) = bus.read(base_addrs.wrapping_add(ascii)) else {
+                return;
+            };
+
+            if val == 0x00 {
+                block.push_str(" ··");
+            } else {
+                block.push_str(&format!(" {}", val as char));
+            }
         }
     }
-    println!()
+    println!("{block}");
 }
 
 pub fn run<B: Bus>(bus: &mut B, address: u64) {
