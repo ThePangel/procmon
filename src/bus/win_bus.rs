@@ -1,7 +1,4 @@
-use crate::{
-    bus::Bus,
-    proc_bus::{ProcBus, Region},
-};
+use super::{Bus, ProcBus, Region};
 use std::{ffi::c_void, io};
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE},

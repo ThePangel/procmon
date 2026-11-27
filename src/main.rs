@@ -1,14 +1,8 @@
 mod bus;
-#[cfg(target_os = "linux")]
-mod linux_bus;
 mod mem_handler;
 mod parser;
-mod proc_bus;
-#[cfg(target_os = "windows")]
-mod win_bus;
-use crate::bus::Bus;
+use crate::bus::{Bus, ProcBus};
 use crate::parser::{ParseError, ParseResult};
-use crate::proc_bus::ProcBus;
 use clap::Parser;
 use std::io;
 
@@ -34,10 +28,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(pid) = args.pid {
         #[cfg(target_os = "windows")]
-        let mut bus = win_bus::WinProcBus::attach(pid);
+        let mut bus = bus::win_bus::WinProcBus::attach(pid);
 
         #[cfg(target_os = "linux")]
-        let mut bus = linux_bus::LinuxProcBus::attach(pid);
+        let mut bus = bus::linux_bus::LinuxProcBus::attach(pid);
 
         let mut buffer = String::new();
         println!("\\");
@@ -78,10 +72,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mem_width: usize = hex_width(args.mem_size);
 
         #[cfg(target_os = "windows")]
-        let mut bus = win_bus::WinBus::alloc(args.mem_size);
+        let mut bus = bus::win_bus::WinBus::alloc(args.mem_size);
 
         #[cfg(target_os = "linux")]
-        let mut bus = linux_bus::LinuxBus::alloc(args.mem_size);
+        let mut bus = bus::linux_bus::LinuxBus::alloc(args.mem_size);
 
         let ptr = bus.memory_ptr;
         if ptr.is_null() {

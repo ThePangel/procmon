@@ -4,3 +4,12 @@ pub trait Bus {
     fn free(&mut self);
     fn run(&mut self, addr: u64);
 }
+
+mod proc_bus;
+pub use proc_bus::{ProcBus, Region};
+
+#[cfg(target_os = "linux")]
+pub mod linux_bus;
+
+#[cfg(target_os = "windows")]
+pub mod win_bus;

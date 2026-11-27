@@ -1,4 +1,4 @@
-use crate::{bus::Bus, proc_bus::ProcBus};
+use crate::bus::{Bus, ProcBus};
 use std::io;
 
 pub fn write<B: Bus>(bus: &mut B, address: u64, bytes: Vec<u8>, mem_width: usize) {

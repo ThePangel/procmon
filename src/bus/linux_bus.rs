@@ -6,10 +6,7 @@ use std::{
     ptr,
 };
 
-use crate::{
-    Bus,
-    proc_bus::{ProcBus, Region},
-};
+use super::{Bus, ProcBus, Region};
 use libc::{
     MAP_ANONYMOUS, MAP_FAILED, MAP_PRIVATE, PROT_EXEC, PROT_READ, PROT_WRITE, mmap, munmap,
 };
