@@ -42,7 +42,7 @@ pub fn proc_write<B: ProcBus>(bus: &mut B, address: u64, bytes: Vec<u8>) {
     }
 
     println!(
-        "\n{:16X}: {}",
+        "\n{:016X}: {}",
         address,
         bytes
             .iter()

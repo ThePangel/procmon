@@ -2,7 +2,7 @@ use crate::{
     bus::Bus,
     proc_bus::{ProcBus, Region},
 };
-use std::ffi::c_void;
+use std::{ffi::c_void, io};
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE},
     System::Diagnostics::Debug::{FlushInstructionCache, ReadProcessMemory, WriteProcessMemory},
@@ -156,7 +156,7 @@ impl ProcBus for WinProcBus {
             let _ = CloseHandle(self.h);
         }
     }
-    fn regions(&self) -> Vec<Region> {
+    fn regions(&self) -> io::Result<Vec<Region>> {
         let mut regions = Vec::new();
         let mut addr: usize = 0;
 
@@ -219,6 +219,6 @@ impl ProcBus for WinProcBus {
             }
             addr = end;
         }
-        regions
+        Ok(regions)
     }
 }
